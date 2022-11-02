@@ -99,8 +99,8 @@ for epoch in range(num_epochs):
         recon = model(img)
         loss = criterion(recon, img)
         
-        optimizer.zero_grad()
-        loss.backward()
+        optimizer.zero_grad() # 将参数梯度归零
+        loss.backward() #
         optimizer.step()
 
     print(f'Epoch:{epoch+1}, Loss:{loss.item():.4f}')

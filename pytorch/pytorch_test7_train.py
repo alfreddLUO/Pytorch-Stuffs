@@ -25,10 +25,34 @@ transform = transforms.Compose([
 ])
 
 # 训练集下载
+
+# --collate_fn：如何取样本的，我们可以定义自己的函数来准确的实现想要的功能
+
+# --drop_last：告诉如何处理数据集长度除以batch_size余下的数据。True就抛弃，否则保留
+
+# --pin_memory：锁页内存
+
+# MNIST:手写数字识别数据集
 mnist_train = datasets.MNIST(root=root, train=True, transform=transform, download=False)
+
+# Dataloader支持两种数据集类型，一种是上面讲述的 Map-style datasets（索引到样本的映射式的数据集），另一种为iterable-style datasets（迭代式的数据集）。
+# batch_size: 设置批训练的大小
+# --shuffle：设置为True的时候，每个epoch都会打乱数据集
+
 mnist_train = DataLoader(dataset=mnist_train, batch_size=batch_size, shuffle=True)
 
+
 # 测试集下载
+#transform就是对图像数据进行处理 传入dataloader的transform类型
+# train： 设置是读取train数据集 还是test test.pt
+# download (bool, optional): If true, downloads the dataset from the internet and
+# puts it in root directory. If dataset is already downloaded, it is not
+# downloaded again.
+# transform (callable, optional): A function/transform that takes in an PIL image
+# and returns a transformed version. E.g, transforms.RandomCrop
+# target_transform (callable, optional): A function/transform that takes in the
+# target and transforms it.
+
 mnist_test = datasets.MNIST(root=root, train=False, transform=transform, download=False)
 mnist_test = DataLoader(dataset=mnist_test, batch_size=batch_size, shuffle=True)
 
@@ -73,11 +97,26 @@ for epoch in range(epochsize):
 
         # 更新参数
         # 将模型的参数梯度初始化为0
+        # 源代码
+        # def zero_grad(self):
+            # r"""Clears the gradients of all optimized :class:`torch.Tensor` s."""
+            # for group in self.param_groups:
+            #     for p in group['params']: # optimizer.zero_grad()函数会遍历模型的所有参数
+            #         if p.grad is not None:
+            #             p.grad.detach_() # 通过p.grad.detach_()方法截断反向传播的梯度流
+            #             p.grad.zero_() # 再通过p.grad.zero_()函数将每个参数的梯度值设为0，即上一次的梯度记录被清空
         optimizer.zero_grad()
         # 反向传播计算梯度
+        # PyTorch的反向传播(即tensor.backward())是通过autograd包来实现的，autograd包会根据tensor进行过的数学运算来自动计算其对应的梯度。
+        # 如果你设置tensor的requires_grads为True，就会开始跟踪这个tensor上面的所有运算，如果你做完运算后使用tensor.backward()，所有的梯度就会自动运算，tensor的梯度将会累加到它的.grad属性里面去。
+        # 更具体地说，损失函数loss是由模型的所有权重w经过一系列运算得到的，若某个w的requires_grads为True，则w的所有上层参数（后面层的权重w）的.grad_fn属性中就保存了对应的运算，然后在使用loss.backward()后，会一层层的反向传播计算每个w的梯度值，并保存到该w的.grad属性中。
+        # 如果没有进行tensor.backward()的话，梯度值将会是None，因此loss.backward()要写在optimizer.step()之前。
         loss.backward()
+        
         # 更新所有参数 
+        # step()函数的作用是执行一次优化步骤，通过梯度下降法来更新参数的值。因为梯度下降是基于梯度的，所以在执行optimizer.step()函数前应先执行loss.backward()函数来计算梯度。
         optimizer.step()
+
 
         # 根据pytorch中backward（）函数的计算，当网络参量进行反馈时，梯度是累积计算而不是被替换，
         # 但在处理每一个batch时并不需要与其他batch的梯度混合起来累积计算，因此需要对每个batch调用一遍zero_grad（）将参数梯度置0.
