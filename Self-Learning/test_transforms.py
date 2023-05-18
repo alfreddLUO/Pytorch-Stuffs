@@ -14,10 +14,16 @@ img = Image.open(Image_path)
 print(img)
 writer = SummaryWriter("logs")
 
+# ToTensor
 # 创建具体的工具实例
 tensor_trans = transforms.ToTensor()
 tensor_img = tensor_trans(img)
 
 writer.add_image("Tensor_img", tensor_img)
 
+# Normalize
+trans_norm = transforms.normalize()
+
+
 print(tensor_img)
+writer.close()
